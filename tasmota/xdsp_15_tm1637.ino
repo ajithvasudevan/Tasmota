@@ -1,5 +1,5 @@
 /*
-  xdsp_15_tm1637.ino - Support for TM1637- and TM1638-based seven-segment displays for Tasmota
+  xdsp_15_tm1637.ino - Support for TM1637- , TM1638- and MAX7219- based seven-segment displays for Tasmota
 
   Copyright (C) 2021  Ajith Vasudevan
 
@@ -21,7 +21,7 @@
 #ifdef USE_DISPLAY_TM1637
 /*********************************************************************************************\
   This driver enables the display of numbers (both integers and floats) and basic text
-  on the inexpensive TM1637- and TM1638-based seven-segment modules. Additionally, for the TM1638, 
+  on the inexpensive TM1637- , TM1638- and MAX7219-based seven-segment modules. Additionally, for the TM1638, 
   it allows the TM1638 LEDs to be toggled using its buttons. 
   Useful STAT messages are also sent when the TM1638 buttons are pressed.
   
@@ -47,6 +47,14 @@
   CLK hardware pin --> "TM1638 CLK"
   STB hardware pin --> "TM1638 STB"
 
+  For MAX7219:
+  Connect the <AX7219 display module's pins to any free GPIOs of the ESP8266 module
+  and assign the pins as follows from Tasmota's GUI:
+
+  DIN hardware pin --> "MAX7219 DIN"
+  CS hardware pin --> "MAX7219 CS"
+  CLK hardware pin --> "MAX7219 CLK"
+
   
   Once the GPIO configuration is saved and the ESP8266/ESP32 module restarts, set the Display Model to 15 
   using the command "DisplayModel 15"
@@ -55,6 +63,7 @@
      "DisplayType 0"  // for the 4-digit TM1637
   or "DisplayType 1"  // for the 6-digit TM1637
   or "DisplayType 2"  // for the 8-digit TM1638
+  or "DisplayType 3"  // for the 8-digit MAX7219
   
   After the ESP8266/ESP32 module restarts again, the following "Display" commands can be used:
   
@@ -64,6 +73,8 @@
                                Sets the display type. 0 => TM1637, 4 digit
                                                       1 => TM1637, 6 digit
                                                       2 => TM1638, 8 digit
+                                                      3 => MAX7219, 8 digit
+
                                Command e.g., "TM1637Data.display_type 1"   // to enable TM1637 6-digit variant
   
 
@@ -221,14 +232,17 @@ Commands specific to TM1638
 #define POSITION_MAX    8
 #define LED_MIN      0
 #define LED_MAX      255
+#define MAX7219_ADDR 0
 
 #include "SevenSegmentTM1637.h"
 #include <TM1638plus.h>
+#include <LedControl.h>
 
 SevenSegmentTM1637 *tm1637display;
 TM1638plus *tm1638display;
+LedControl *max7219display;
 
-enum display_types { TM1637, TM1638 };
+enum display_types { TM1637, TM1638, MAX7219 };
 
 struct {
   char scroll_text[CMD_MAX_LEN];
@@ -258,11 +272,16 @@ bool DriverInit(void) {
   if(Settings.display_model == XDSP_15) {
     if(TM1637Data.driver_inited) return true;
 
-    if(Settings.display_type == 2)      { TM1637Data.num_digits = 8; TM1637Data.display_type = TM1638; }
+    if(Settings.display_type == 3)      { TM1637Data.num_digits = 8; TM1637Data.display_type = MAX7219; }
+    else if(Settings.display_type == 2)      { TM1637Data.num_digits = 8; TM1637Data.display_type = TM1638; }
     else if(Settings.display_type == 1) { TM1637Data.num_digits = 6; TM1637Data.display_type = TM1637; }
     else                                { Settings.display_type = 0; TM1637Data.num_digits = 4; TM1637Data.display_type = TM1637; }
 
-    if(TM1637Data.display_type == TM1637) {
+    if(TM1637Data.display_type == MAX7219) {
+      strcpy(TM1637Data.model_name, "MAX7219");
+      max7219display = new LedControl(Pin(GPIO_MAX7219DIN), Pin(GPIO_MAX7219CLK), Pin(GPIO_MAX7219CS), 1 );
+      max7219display->shutdown(MAX7219_ADDR,false);
+    } else if(TM1637Data.display_type == TM1637) {
       strcpy(TM1637Data.model_name, "TM1637");
       tm1637display = new SevenSegmentTM1637(Pin(GPIO_TM1637CLK), Pin(GPIO_TM1637DIO));
       tm1637display->begin(TM1637Data.num_digits, 1);
@@ -282,6 +301,37 @@ bool DriverInit(void) {
 
   return true;
 }
+
+// Function to display specified ascii char at specified position for MAX7219
+void displayMAX7219ASCII(uint8_t pos, char c) {
+  pos = 7 - pos;
+  max7219display->setChar(MAX7219_ADDR, pos, c, false);
+}
+
+// Function to display specified ascii char with dot at specified position for MAX7219
+void displayMAX7219ASCIIwDot(uint8_t pos, char c) {
+  pos = 7 - pos;
+  max7219display->setChar(MAX7219_ADDR, pos, c, true);
+}
+
+// Function to display raw segments at specified position for MAX7219
+void displayMAX72197Seg(uint8_t pos, uint8_t seg) {
+  bool dec_bit = seg & 128;
+  seg = seg << 1;
+  seg = seg | dec_bit;    
+  uint8_t NO_OF_BITS = 8; 
+  uint8_t reverse_num = 0;
+  for (uint8_t i = 0; i < NO_OF_BITS; i++) 
+  { 
+    if((seg & (1 << i))) 
+    reverse_num |= 1 << ((NO_OF_BITS - 1) - i);   
+  } 
+  seg = reverse_num;
+
+  pos = 7 - pos;
+  max7219display->setRow(MAX7219_ADDR, pos, seg);
+}
+
 
 /*********************************************************************************************\
 * Displays number without decimal, with/without leading zeros, specifying start-position
@@ -336,12 +386,14 @@ bool CmndNumber(bool clear) {
     if(i>TM1637Data.num_digits) break;
     if(TM1637Data.display_type == TM1637) { rawBytes[0] = tm1637display->encode(pad); tm1637display->printRaw(rawBytes, 1, i); }
     else if(TM1637Data.display_type == TM1638) tm1638display->displayASCII(i, pad);
+    else if(TM1637Data.display_type == MAX7219) displayMAX7219ASCII(i, pad);
   }
 
   for(uint32_t j = 0; i< position + length; i++, j++) {
     if(i>TM1637Data.num_digits) break;
     if(txt[j] == 0) break;
-    if(TM1637Data.display_type == TM1637) { rawBytes[0] = tm1637display->encode(txt[j]);  tm1637display->printRaw(rawBytes, 1, i); }
+    if(TM1637Data.display_type == MAX7219) displayMAX7219ASCII(i, txt[j]);
+    else if(TM1637Data.display_type == TM1637) { rawBytes[0] = tm1637display->encode(txt[j]);  tm1637display->printRaw(rawBytes, 1, i); }
     else if(TM1637Data.display_type == TM1638) tm1638display->displayASCII(i, txt[j]);
   }
 
@@ -420,6 +472,17 @@ bool CmndFloat(bool clear) {
       }
       else tm1638display->displayASCII(j+position, txt[i]);
     }
+  } else if(TM1637Data.display_type == MAX7219) {
+    for(uint32_t i=0, j=0; i<length; i++, j++) {
+      if((j+position) > 7) break;
+      if(txt[i] == 0) break;
+      if(txt[i+1] == '.') { 
+        displayMAX7219ASCIIwDot(j+position, txt[i]);
+        i++;
+        length++;
+      }
+      else displayMAX7219ASCII(j+position, txt[i]);
+    }
   }
 
   return true;
@@ -442,7 +505,9 @@ bool CmndClear(void) {
 // * Clears the display
 // \*********************************************************************************************/
 void clearDisplay (void) {
-  if(TM1637Data.display_type == TM1637) {
+  if(TM1637Data.display_type == MAX7219) {
+    max7219display->clearDisplay(MAX7219_ADDR);
+  } else if(TM1637Data.display_type == TM1637) {
     unsigned char arr[] =  {0};
     for(int i=0; i<TM1637Data.num_digits; i++) tm1637display->printRaw(arr, 1, i);
   } else if(TM1637Data.display_type == TM1638) {
@@ -528,6 +593,8 @@ void scrollText(void) {
       tm1637display->printRaw(rawBytes, 1, i);
     } else if(TM1637Data.display_type == TM1638) {
       tm1638display->display7Seg(i, rawBytes[0]);
+    } else if(TM1637Data.display_type == MAX7219) {
+      displayMAX72197Seg(i, rawBytes[0]);
     }
 
   }
@@ -566,6 +633,8 @@ bool CmndLevel(void) {
       tm1637display->printRaw(rawBytes, 1, digit);
     } else if(TM1637Data.display_type == TM1638) {
       tm1638display->display7Seg(digit, value);
+    } else if(TM1637Data.display_type == MAX7219) {
+      displayMAX72197Seg(digit, value);
     }
 
   }
@@ -581,7 +650,7 @@ bool CmndLevel(void) {
 * or any desired part using the length and position parameters.
 \*********************************************************************************************/
 bool CmndRaw(void) {
-  uint8_t DATA[6] = { 0, 0, 0, 0, 0, 0 };
+  uint8_t DATA[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
   char as[CMD_MAX_LEN];
   char bs[CMD_MAX_LEN];
@@ -589,6 +658,8 @@ bool CmndRaw(void) {
   char ds[CMD_MAX_LEN];
   char es[CMD_MAX_LEN];
   char fs[CMD_MAX_LEN];
+  char gs[CMD_MAX_LEN];
+  char hs[CMD_MAX_LEN];
 
   char sLength[CMD_MAX_LEN];
   char sPos[CMD_MAX_LEN];
@@ -599,6 +670,12 @@ bool CmndRaw(void) {
 
   switch (ArgC())
   {
+    case 10 :
+      subStr(hs, XdrvMailbox.data, ",", 10);
+      DATA[7] = atoi(hs);
+    case 9 :
+      subStr(gs, XdrvMailbox.data, ",", 9);
+      DATA[6] = atoi(gs);
     case 8 :
       subStr(fs, XdrvMailbox.data, ",", 8);
       DATA[5] = atoi(fs);
@@ -629,8 +706,8 @@ bool CmndRaw(void) {
   if(length < 0 || length > TM1637Data.num_digits) length = TM1637Data.num_digits;
   if(position < 0 || position > (TM1637Data.num_digits-1)) position = 0;
 
-  AddLog(LOG_LEVEL_DEBUG, PSTR("TM7: a %d, b %d, c %d, d %d, e %d, f %d, len %d, pos %d"),
-    DATA[0], DATA[1], DATA[2], DATA[3], DATA[4], DATA[5], length, position);
+  AddLog(LOG_LEVEL_DEBUG, PSTR("TM7: a %d, b %d, c %d, d %d, e %d, f %d, g %d, h %d, len %d, pos %d"),
+    DATA[0], DATA[1], DATA[2], DATA[3], DATA[4], DATA[5], DATA[6], DATA[7], length, position);
 
   if(TM1637Data.display_type == TM1637) {
     uint8_t rawBytes[1];
@@ -643,6 +720,11 @@ bool CmndRaw(void) {
     for(uint32_t i=position; i<position+length; i++ ) {
       if(i>7) break;
       tm1638display->display7Seg(i, DATA[i-position]);
+    }
+  } else if(TM1637Data.display_type == MAX7219) {
+    for(uint32_t i=position; i<position+length; i++ ) {
+      if(i>7) break;
+      displayMAX72197Seg(i, DATA[i-position]);
     }
   }
 
@@ -714,6 +796,23 @@ bool CmndText(bool clear) {
         tm1638display->display7Seg(i, (1 | 2 | 32 | 64));
       } else tm1638display->displayASCII(i, sString[j]);
     }      
+  }  else if(TM1637Data.display_type == MAX7219) {
+    uint8_t rawBytes[1];
+    for(uint32_t j = 0; i< position + length; i++, j++) {
+      if(i > (TM1637Data.num_digits-1)) break;
+      if(sString[j] == 0) break;
+      rawBytes[0] = tm1637display->encode(sString[j]);
+      bool dotSkipped = false;
+      if(sString[j+1] == '.') {
+        dotSkipped = true;
+        rawBytes[0] = rawBytes[0] | 128;
+        j++;
+      } else if(sString[j] == '^') {
+        rawBytes[0] = 1 | 2 | 32 | 64;
+      }
+      if(!dotSkipped && sString[j] == '.') rawBytes[0] = 128;
+      displayMAX72197Seg(i, rawBytes[0]);
+    }
   }
 
   return true;
@@ -746,7 +845,8 @@ bool CmndBrightness(void) {
 void setBrightness(uint8_t val) {
   if((val < BRIGHTNESS_MIN) || (val > BRIGHTNESS_MAX)) val = 5;
   Settings.display_dimmer = val;
-  if(TM1637Data.display_type == TM1637)  tm1637display->setBacklight(val*10);
+  if(TM1637Data.display_type == MAX7219)  max7219display->setIntensity(MAX7219_ADDR, val-1);
+  else if(TM1637Data.display_type == TM1637)  tm1637display->setBacklight(val*10);
   else if(TM1637Data.display_type == TM1638) tm1638display->brightness(val-1);  
 }
 
@@ -811,6 +911,11 @@ void showTime() {
     for(uint32_t i = 0; i< 4; i++) {
       if((millis() % 1000) > 500 && (i == 1)) tm1638display->displayASCIIwDot(i, tm[i]);
       else tm1638display->displayASCII(i, tm[i]);
+    }
+  } else if(TM1637Data.display_type == MAX7219) {
+    for(uint32_t i = 0; i< 4; i++) {
+      if((millis() % 1000) > 500 && (i == 1)) displayMAX7219ASCIIwDot(i, tm[i]);
+      else displayMAX7219ASCII(i, tm[i]);
     }
   }
 
