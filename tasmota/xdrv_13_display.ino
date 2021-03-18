@@ -82,7 +82,6 @@ const uint8_t DISPLAY_LOG_ROWS = 32;           // Number of lines in display log
 #define D_CMND_DISP_BUTTONS "Buttons"
 #define D_CMND_DISP_SCROLLTEXT "ScrollText"
 #define D_CMND_DISP_TYPE "Type"
-
 #define D_CMND_DISP_ILIMODE "ILIMode"
 #define D_CMND_DISP_ILIINVERT "Invert"
 
@@ -1922,15 +1921,9 @@ void CmndDisplayType(void)
 
 void CmndDisplaySize(void)
 {
-#if defined(USE_DISPLAY_TM1637) || defined(USE_DISPLAY_MAX7219)
-  if ((XdrvMailbox.payload > 0) && (XdrvMailbox.payload <= 6)) {
-#else
-  if ((XdrvMailbox.payload > 0) && (XdrvMailbox.payload <= 4)) {
-#endif
-    Settings.display_size = XdrvMailbox.payload;
-    if (renderer) renderer->setTextSize(Settings.display_size);
-    //else DisplaySetSize(Settings.display_size);
-  }
+  Settings.display_size = XdrvMailbox.payload;
+  if (renderer) renderer->setTextSize(Settings.display_size);
+  //else DisplaySetSize(Settings.display_size);
   ResponseCmndNumber(Settings.display_size);
 }
 

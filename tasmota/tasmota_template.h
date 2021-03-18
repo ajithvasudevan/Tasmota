@@ -788,8 +788,7 @@ const uint16_t kGpioNiceList[] PROGMEM = {
 #endif
 #ifdef USE_VL53L0X
   AGPIO(GPIO_VL53L0X_XSHUT1) + VL53L0X_MAX_SENSORS,  // When using multiple VL53L0X.
-#endif
-
+#endif  
 #ifdef USE_DISPLAY_MAX7219
   AGPIO(GPIO_MAX7219CLK),
   AGPIO(GPIO_MAX7219DIN),
