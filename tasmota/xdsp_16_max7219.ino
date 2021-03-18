@@ -247,7 +247,7 @@ struct {
   uint8_t scroll_index = 0;
   uint8_t iteration = 0;
   uint8_t brightness = 5;
-  uint8_t display_type = MAX7219;
+  uint8_t display_type = 3;
   uint8_t prev_buttons;
 
   bool driver_inited = false;
@@ -266,7 +266,7 @@ bool MAXDriverInit(void) {
 
     Settings.display_options.data = 3;
     MAX7219Data.num_digits = 8; 
-    MAX7219Data.display_type = MAX7219;
+    MAX7219Data.display_type = 3;
 
     strcpy(MAX7219Data.model_name, "MAX7219");
     max7219display = new LedControl(Pin(GPIO_MAX7219DIN), Pin(GPIO_MAX7219CLK), Pin(GPIO_MAX7219CS), 1 );
