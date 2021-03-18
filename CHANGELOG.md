@@ -16,6 +16,10 @@ All notable changes to this project will be documented in this file.
 - Crash protection in ext_vnsprintf_P (#11202)
 - Extent compile time SetOptions support (#11204)
 - ESP32 Extent BLE (#11212)
+- ESP32 support for WS2812 hardware driver via RMT or I2S
+- ESP32 support for secondary I2C controller
+- Add support for MPU6686 on primary or secondary I2C bus
+
 
 ### Changed
 - ESP32 core library from v1.0.5-rc6 to v1.0.5
@@ -35,6 +39,7 @@ All notable changes to this project will be documented in this file.
 - Zigbee exception when bad frame is received (#11192)
 - ESP32 flash script for Odroid and Core2 (#11227)
 - ESP32 WS2812 bitbang support (#11248)
+- DS18x20 driver timing issue (#11270)
 
 ## [Released]
 
