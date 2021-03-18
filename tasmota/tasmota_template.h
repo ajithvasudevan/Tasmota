@@ -551,7 +551,7 @@ const uint16_t kGpioNiceList[] PROGMEM = {
   AGPIO(GPIO_SR04_TRIG),      // SR04 Tri/TXgger pin
   AGPIO(GPIO_SR04_ECHO),      // SR04 Ech/RXo pin
 #endif
-#if defined(USE_TM1638) || defined(USE_DISPLAY_TM1637)
+#ifdef USE_TM1638
   AGPIO(GPIO_TM16CLK),        // TM1638 Clock
   AGPIO(GPIO_TM16DIO),        // TM1638 Data I/O
   AGPIO(GPIO_TM16STB),        // TM1638 Strobe
@@ -788,7 +788,8 @@ const uint16_t kGpioNiceList[] PROGMEM = {
 #endif
 #ifdef USE_VL53L0X
   AGPIO(GPIO_VL53L0X_XSHUT1) + VL53L0X_MAX_SENSORS,  // When using multiple VL53L0X.
-#endif  
+#endif
+
 #ifdef USE_DISPLAY_MAX7219
   AGPIO(GPIO_MAX7219CLK),
   AGPIO(GPIO_MAX7219DIN),
@@ -833,7 +834,6 @@ const uint16_t kGpioNiceList[] PROGMEM = {
   AGPIO(GPIO_ADC_JOY) + MAX_ADCS,         // Joystick
   AGPIO(GPIO_ADC_PH) + MAX_ADCS,          // Analog PH Sensor
 #endif  // ESP32
-
 };
 
 /*-------------------------------------------------------------------------------------------*\
