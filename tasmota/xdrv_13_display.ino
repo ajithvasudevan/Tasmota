@@ -1919,6 +1919,7 @@ void CmndDisplayType(void)
   ResponseCmndNumber(XdrvMailbox.payload);
 }
 
+
 void CmndDisplaySize(void)
 {
   Settings.display_size = XdrvMailbox.payload;
