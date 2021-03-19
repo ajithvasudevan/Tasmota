@@ -834,7 +834,7 @@ bool Xdsp15(uint8_t function) {
         result = true;
         break;
       case FUNC_DISPLAY_INIT:
-        AddLog(LOG_LEVEL_DEBUG, PSTR("TM7: %s: FUNC_DISPLAY_INIT: Display depends on TM1637Data.display_type, currently %d"), TM1637Data.model_name, Settings.display_options.data);
+        AddLog(LOG_LEVEL_DEBUG, PSTR("TM7: %s: FUNC_DISPLAY_INIT"));
         break;
       case FUNC_DISPLAY_SEVENSEG_TEXT:
       case FUNC_DISPLAY_CLEAR:

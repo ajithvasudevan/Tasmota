@@ -1939,7 +1939,7 @@ void CmndDisplayText(void)
 #ifndef USE_DISPLAY_MODES1TO5
     DisplayText();
 #else
-    if(Settings.display_model == 15) {
+    if(Settings.display_model == 15 || Settings.display_model == 16) {
       XdspCall(FUNC_DISPLAY_SEVENSEG_TEXT);
     } else if (!Settings.display_mode) {
       DisplayText();
