@@ -80,13 +80,6 @@ const uint8_t DISPLAY_LOG_ROWS = 32;           // Number of lines in display log
 #define D_CMND_DISP_CLOCK "Clock"
 #define D_CMND_DISP_TEXTNC "TextNC"                   // NC - "No Clear"
 #define D_CMND_DISP_SCROLLTEXT "ScrollText"
-<<<<<<< HEAD
-#define D_CMND_DISP_ILIMODE "ILIMode"
-#define D_CMND_DISP_ILIINVERT "Invert"
-#define D_CMND_DISP_TMVARIANT "TMVariant"             // `DisplayTMVariant 0` = 6 digit, standard model; `DisplayTMVariant 1` = 6 digit, "jumbled" model
-
-=======
->>>>>>> c8b3b20df1da212acefefb91548e7dd72c224c4a
 
 enum XdspFunctions { FUNC_DISPLAY_INIT_DRIVER, FUNC_DISPLAY_INIT, FUNC_DISPLAY_EVERY_50_MSECOND, FUNC_DISPLAY_EVERY_SECOND,
                      FUNC_DISPLAY_MODEL, FUNC_DISPLAY_MODE, FUNC_DISPLAY_POWER,
@@ -115,12 +108,7 @@ const char kDisplayCommands[] PROGMEM = D_PRFX_DISPLAY "|"  // Prefix
 #endif
   D_CMND_DISP_CLEAR "|" D_CMND_DISP_NUMBER "|" D_CMND_DISP_FLOAT "|" D_CMND_DISP_NUMBERNC "|" D_CMND_DISP_FLOATNC "|"
   D_CMND_DISP_RAW "|" D_CMND_DISP_LEVEL "|" D_CMND_DISP_SEVENSEG_TEXT "|" D_CMND_DISP_SEVENSEG_TEXTNC "|"
-<<<<<<< HEAD
-  D_CMND_DISP_SCROLLDELAY "|" D_CMND_DISP_CLOCK "|" D_CMND_DISP_TEXTNC "|"
-  D_CMND_DISP_SCROLLTEXT "|" D_CMND_DISP_ILIMODE "|" D_CMND_DISP_ILIINVERT "|" D_CMND_DISP_TMVARIANT
-=======
   D_CMND_DISP_SCROLLDELAY "|" D_CMND_DISP_CLOCK "|" D_CMND_DISP_TEXTNC "|" D_CMND_DISP_SCROLLTEXT
->>>>>>> c8b3b20df1da212acefefb91548e7dd72c224c4a
   ;
 
 void (* const DisplayCommand[])(void) PROGMEM = {
@@ -132,10 +120,6 @@ void (* const DisplayCommand[])(void) PROGMEM = {
 #endif
   &CmndDisplayClear, &CmndDisplayNumber, &CmndDisplayFloat, &CmndDisplayNumberNC, &CmndDisplayFloatNC,
   &CmndDisplayRaw, &CmndDisplayLevel, &CmndDisplaySevensegText, &CmndDisplaySevensegTextNC,
-<<<<<<< HEAD
-  &CmndDisplayScrollDelay, &CmndDisplayClock, &CmndDisplayTextNC,
-  &CmndDisplayScrollText, &CmndDisplayILIMOde ,  &CmndDisplayILIInvert, &CmndDisplayTMVariant
-=======
   &CmndDisplayScrollDelay, &CmndDisplayClock, &CmndDisplayTextNC, &CmndDisplayScrollText
 };
 
@@ -176,7 +160,6 @@ struct GRAPH {
   uint8_t last_val;
   uint8_t color_index;
   GFLAGS flags;
->>>>>>> c8b3b20df1da212acefefb91548e7dd72c224c4a
 };
 
 struct GRAPH *graph[NUM_GRAPHS];
@@ -2016,149 +1999,6 @@ void CmndDisplayScrollText(void) {
   if(result) ResponseCmndChar(XdrvMailbox.data);
 }
 
-<<<<<<< HEAD
-
-void CmndDisplaySize(void)
-{
-  if ((XdrvMailbox.payload > 0) && (XdrvMailbox.payload <= 4)) {
-    Settings.display_size = XdrvMailbox.payload;
-    if (renderer) renderer->setTextSize(Settings.display_size);
-    //else DisplaySetSize(Settings.display_size);
-  }
-  ResponseCmndNumber(Settings.display_size);
-}
-
-void CmndDisplayFont(void)
-{
-  if ((XdrvMailbox.payload >=0) && (XdrvMailbox.payload <= 4)) {
-    Settings.display_font = XdrvMailbox.payload;
-    if (renderer) renderer->setTextFont(Settings.display_font);
-    //else DisplaySetFont(Settings.display_font);
-  }
-  ResponseCmndNumber(Settings.display_font);
-}
-
-
-void CmndDisplayILIMOde(void)
-{
-  if ((XdrvMailbox.payload >= 1) && (XdrvMailbox.payload <= 7)) {
-    Settings.display_options.ilimode = XdrvMailbox.payload;
-    TasmotaGlobal.restart_flag = 2;
-  }
-  ResponseCmndNumber(Settings.display_options.ilimode);
-}
-
-
-void CmndDisplayTMVariant(void)
-{
-  if ((XdrvMailbox.payload >= 0) && (XdrvMailbox.payload <= 2)) {
-    Settings.display_options.tm1637_variant = XdrvMailbox.payload;
-    TasmotaGlobal.restart_flag = 2;
-  }
-  ResponseCmndNumber(Settings.display_options.tm1637_variant);
-}
-
-
-void CmndDisplayILIInvert(void)
-{
-  if ((XdrvMailbox.payload >= 0) && (XdrvMailbox.payload <= 1)) {
-    Settings.display_options.Invert = XdrvMailbox.payload;
-    if (renderer) renderer->invertDisplay(Settings.display_options.Invert);
-  }
-  ResponseCmndNumber(Settings.display_options.Invert);
-}
-
-void CmndDisplayRotate(void)
-{
-  if ((XdrvMailbox.payload >= 0) && (XdrvMailbox.payload < 4)) {
-    if ((Settings.display_rotate) != XdrvMailbox.payload) {
-/*
-      // Needs font info regarding height and width
-      if ((Settings.display_rotate &1) != (XdrvMailbox.payload &1)) {
-        uint8_t temp_rows = Settings.display_rows;
-        Settings.display_rows = Settings.display_cols[0];
-        Settings.display_cols[0] = temp_rows;
-#ifdef USE_DISPLAY_MODES1TO5
-        DisplayReAllocScreenBuffer();
-#endif  // USE_DISPLAY_MODES1TO5
-      }
-*/
-      Settings.display_rotate = XdrvMailbox.payload;
-      DisplayInit(DISPLAY_INIT_MODE);
-#ifdef USE_DISPLAY_MODES1TO5
-      DisplayLogBufferInit();
-#endif  // USE_DISPLAY_MODES1TO5
-    }
-  }
-  ResponseCmndNumber(Settings.display_rotate);
-}
-
-void CmndDisplayText(void)
-{
-  if (disp_device && XdrvMailbox.data_len > 0) {
-#ifndef USE_DISPLAY_MODES1TO5
-    DisplayText();
-#else
-    if(Settings.display_model == 15) {
-      XdspCall(FUNC_DISPLAY_SEVENSEG_TEXT);
-    } else if (!Settings.display_mode) {
-      DisplayText();
-    } else {
-      DisplayLogBufferAdd(XdrvMailbox.data);
-    }
-#endif  // USE_DISPLAY_MODES1TO5
-    ResponseCmndChar(XdrvMailbox.data);
-  }
-}
-
-void CmndDisplayAddress(void)
-{
-  if ((XdrvMailbox.index > 0) && (XdrvMailbox.index <= 8)) {
-    if ((XdrvMailbox.payload >= 0) && (XdrvMailbox.payload <= 255)) {
-      Settings.display_address[XdrvMailbox.index -1] = XdrvMailbox.payload;
-    }
-    ResponseCmndIdxNumber(Settings.display_address[XdrvMailbox.index -1]);
-  }
-}
-
-void CmndDisplayRefresh(void)
-{
-  if ((XdrvMailbox.payload >= 1) && (XdrvMailbox.payload <= 7)) {
-    Settings.display_refresh = XdrvMailbox.payload;
-  }
-  ResponseCmndNumber(Settings.display_refresh);
-}
-
-void CmndDisplayColumns(void)
-{
-  if ((XdrvMailbox.index > 0) && (XdrvMailbox.index <= 2)) {
-    if ((XdrvMailbox.payload > 0) && (XdrvMailbox.payload <= DISPLAY_MAX_COLS)) {
-      Settings.display_cols[XdrvMailbox.index -1] = XdrvMailbox.payload;
-#ifdef USE_DISPLAY_MODES1TO5
-      if (1 == XdrvMailbox.index) {
-        DisplayLogBufferInit();
-        DisplayReAllocScreenBuffer();
-      }
-#endif  // USE_DISPLAY_MODES1TO5
-    }
-    ResponseCmndIdxNumber(Settings.display_cols[XdrvMailbox.index -1]);
-  }
-}
-
-void CmndDisplayRows(void)
-{
-  if ((XdrvMailbox.payload > 0) && (XdrvMailbox.payload <= DISPLAY_MAX_ROWS)) {
-    Settings.display_rows = XdrvMailbox.payload;
-#ifdef USE_DISPLAY_MODES1TO5
-    DisplayLogBufferInit();
-    DisplayReAllocScreenBuffer();
-#endif  // USE_DISPLAY_MODES1TO5
-  }
-  ResponseCmndNumber(Settings.display_rows);
-}
-
-=======
->>>>>>> c8b3b20df1da212acefefb91548e7dd72c224c4a
 /*********************************************************************************************\
  * Optional drivers
 \*********************************************************************************************/

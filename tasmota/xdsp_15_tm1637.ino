@@ -215,15 +215,9 @@ void TM1637Init(void)
     if ((!Settings.display_width || Settings.display_width > 6))
     {
       Settings.display_width = 4;
-<<<<<<< HEAD
-      Settings.display_options.tm1637_variant = 0;
-    }
-    setTM1637DigitOrder();
-=======
       Settings.display_options.type = 0;
     }
     TM1637SetDigitOrder();
->>>>>>> c8b3b20df1da212acefefb91548e7dd72c224c4a
   }
   else if (PinUsed(GPIO_MAX7219DIN) && PinUsed(GPIO_MAX7219CLK) && PinUsed(GPIO_MAX7219CS))
   {
@@ -262,13 +256,7 @@ void TM1637Init(void)
   TM1637ClearDisplay();
   TM1637Dim();
   TM1637Data.init_done = true;
-<<<<<<< HEAD
-  AddLog(LOG_LEVEL_INFO, PSTR("DSP: %s with %d digits"), TM1637Data.model_name, Settings.display_width);
-  if(TM1637 == TM1637Data.display_type)
-    AddLog(LOG_LEVEL_INFO, PSTR("DSP: TM1637 variant is %d"), Settings.display_options.tm1637_variant);
-=======
   AddLog(LOG_LEVEL_INFO, PSTR("DSP: %s with %d digits (type %d)"), TM1637Data.model_name, Settings.display_width, Settings.display_options.type);
->>>>>>> c8b3b20df1da212acefefb91548e7dd72c224c4a
 }
 
 // Function to display specified ascii char at specified position for MAX7219
@@ -305,12 +293,6 @@ void displayMAX72197Seg(uint8_t pos, uint8_t seg)
 }
 
 // Function to fix order of hardware digits for different TM1637 variants
-<<<<<<< HEAD
-void setTM1637DigitOrder() {
-  if(Settings.display_options.tm1637_variant == 0) {
-    for(uint8_t i=0; i<6; i++) TM1637Data.digit_order[i] = i;
-  } else if(Settings.display_options.tm1637_variant == 1) {
-=======
 void TM1637SetDigitOrder(void) {
   if (0 == Settings.display_options.type) {
     for (uint32_t i = 0; i < 6; i++) {
@@ -318,7 +300,6 @@ void TM1637SetDigitOrder(void) {
     }
   }
   else if (1 == Settings.display_options.type) {
->>>>>>> c8b3b20df1da212acefefb91548e7dd72c224c4a
     TM1637Data.digit_order[0] = 2;
     TM1637Data.digit_order[1] = 1;
     TM1637Data.digit_order[2] = 0;
@@ -495,11 +476,7 @@ bool CmndTM1637Float(bool clear)
       }
       if ((j + position) > Settings.display_width)
         break;
-<<<<<<< HEAD
-      tm1637display->printRaw(rawBytes, 1, TM1637Data.digit_order[j + position] );
-=======
       tm1637display->printRaw(rawBytes, 1, TM1637Data.digit_order[j + position]);
->>>>>>> c8b3b20df1da212acefefb91548e7dd72c224c4a
     }
   }
   else if (TM1638 == TM1637Data.display_type)
